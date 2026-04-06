@@ -53,7 +53,7 @@ data class Anime(
     val year: Int,
     val genre: String,
     val episodes: Int,
-    var status: WatchStatus = WatchStatus.Planned
+    val status: WatchStatus = WatchStatus.Planned
 )
 
 val sampleAnimeList = listOf(
@@ -66,18 +66,19 @@ val sampleAnimeList = listOf(
 )
 
 class AnimeStateHolder(
-    private val allAnime: List<Anime>
+    allAnime: List<Anime>
 ) {
+    var animeList by mutableStateOf(allAnime)
     var searchQuery by mutableStateOf("")
     var filterStatus by mutableStateOf<WatchStatus?>(null)
 
     val filteredAnime: List<Anime>
-        get() = allAnime
-            .filter { anime ->
-                searchQuery.isBlank() || anime.title.contains(searchQuery, ignoreCase = true)
+        get() = animeList
+            .filter {
+                searchQuery.isBlank() || it.title.contains(searchQuery, ignoreCase = true)
             }
-            .filter { anime ->
-                filterStatus == null || anime.status == filterStatus
+            .filter {
+                filterStatus == null || it.status == filterStatus
             }
 
     fun onSearchChange(newValue: String) {
@@ -89,17 +90,25 @@ class AnimeStateHolder(
     }
 
     fun nextStatus(anime: Anime) {
-        anime.status = when (anime.status) {
-            WatchStatus.Planned -> WatchStatus.Watching
-            WatchStatus.Watching -> WatchStatus.Done
-            WatchStatus.Done -> WatchStatus.Planned
+        animeList = animeList.map {
+            if (it.id == anime.id) {
+                it.copy(
+                    status = when (it.status) {
+                        WatchStatus.Planned -> WatchStatus.Watching
+                        WatchStatus.Watching -> WatchStatus.Done
+                        WatchStatus.Done -> WatchStatus.Planned
+                    }
+                )
+            } else {
+                it
+            }
         }
     }
 
-    val totalCount get() = allAnime.size
-    val plannedCount get() = allAnime.count { it.status == WatchStatus.Planned }
-    val watchingCount get() = allAnime.count { it.status == WatchStatus.Watching }
-    val doneCount get() = allAnime.count { it.status == WatchStatus.Done }
+    val totalCount get() = animeList.size
+    val plannedCount get() =animeList.count { it.status == WatchStatus.Planned }
+    val watchingCount get() = animeList.count { it.status == WatchStatus.Watching }
+    val doneCount get() = animeList.count { it.status == WatchStatus.Done }
 }
 
 @Composable
